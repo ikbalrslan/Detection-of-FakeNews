@@ -13,13 +13,13 @@ def readFile(trainReal, trainFake):
         linesOfFake = fileFake.read().splitlines() ##split text file into lines and store in list
     return linesOfReal,linesOfFake
 
-def bagOfWords(linesOfReal,linesOfFake, ngram): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
+def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
     # create the transform / stop_words="english"
-    vectorizerReal = CountVectorizer(lowercase=True, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
-    trainReal = linesOfReal[100:]
-    testReal = linesOfReal[:100]
+    trainReal = linesOfReal[:]
+    testReal = linesOfReal[:200]
 
     vectorizerReal.fit(trainReal)  ##fit in vector
     indexDictOfWordReal = vectorizerReal.vocabulary_  ##assign index for each word by vocab function
@@ -29,11 +29,11 @@ def bagOfWords(linesOfReal,linesOfFake, ngram): ## ngram_range=(1, 1) for unigra
     #print(uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
-    vectorizerFake = CountVectorizer(lowercase=True, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
-    trainFake = linesOfFake[100:]
-    testFake = linesOfFake[:100]
+    trainFake = linesOfFake[:]
+    testFake = linesOfFake[:200]
 
     vectorizerFake.fit(trainFake)  ##fit in vector
     indexDictOfWordFake = vectorizerFake.vocabulary_  ##assign index for each word by vocab function
@@ -75,7 +75,7 @@ def bagOfWords(linesOfReal,linesOfFake, ngram): ## ngram_range=(1, 1) for unigra
     correctnessCount = 0
     for line in testHeadLines.keys():
         #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, analyzer='word', ngram_range=(ngram, ngram),
+        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram),
                                          max_df=1.0, min_df=1, max_features=None)
         temp = []
         temp.append(line)
@@ -158,6 +158,6 @@ def understandData(countOfRealsDict,countOfFakesDict):
     sortedFakeDict = [(k, countOfFakesDict[k]) for k in sorted(countOfFakesDict, key=countOfFakesDict.get, reverse=True)]
     counterReal = 0
     counterFake = 0
-    print(sortedRealDict)
-    print(sortedFakeDict)
+    #print(sortedRealDict)
+    #print(sortedFakeDict)
 

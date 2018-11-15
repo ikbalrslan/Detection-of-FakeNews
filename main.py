@@ -2,12 +2,17 @@ from readFile import readFile, bagOfWords
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
 
-
+stopEnglish = "english"
+stopNone = None
 linesOfReal, linesOfFake = readFile("clean_real-Train.txt","clean_fake-Train.txt")
-print("Unigram:")
-bagOfWords(linesOfReal,linesOfFake, 1)
-print("\nBigram:")
-bagOfWords(linesOfReal,linesOfFake, 2)
+print("Unigram stopEnglish:")
+bagOfWords(linesOfReal, linesOfFake, stopEnglish, 1)
+print("\nUnigram stopNone:")
+bagOfWords(linesOfReal, linesOfFake, stopNone, 1)
+print("\nBigram stopEnglish:")
+bagOfWords(linesOfReal, linesOfFake, stopEnglish, 2)
+print("\nBigram stopNone:")
+bagOfWords(linesOfReal, linesOfFake, stopNone, 2)
 
 #print("trying new repo...")
 
