@@ -1,6 +1,18 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 from math import log10
+import pandas as pd
+
+
+def readCSV(testFile):
+    testHeadlines = pd.read_csv(testFile, sep=',', error_bad_lines=False, encoding="latin-1", index_col=False,
+                                  warn_bad_lines=False, low_memory=False)
+
+    testHeadlines.columns = ['Id', 'Category']
+    testHeadlines.set_index("Id", "Category")
+    testHeadDict = testHeadlines.to_dict(orient="index")
+    print(testHeadDict)
+    return testHeadDict # return test dataframe
 
 
 
@@ -19,21 +31,20 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
                                      max_features=None)
 
     trainReal = linesOfReal[:]
-    testReal = linesOfReal[:200]
+
 
     vectorizerReal.fit(trainReal)  ##fit in vector
     indexDictOfWordReal = vectorizerReal.vocabulary_  ##assign index for each word by vocab function
     bag_of_words_real = vectorizerReal.transform(trainReal)
     BoWOfReal = bag_of_words_real.toarray()  ##bag of words array
     uniqlistOfRealWords = vectorizerReal.get_feature_names()  ## create unique list by feature function
-    #print(uniqlistOfRealWords)
+    print(len(uniqlistOfRealWords))
 
     # create the transform / stop_words="english"
     vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainFake = linesOfFake[:]
-    testFake = linesOfFake[:200]
 
     vectorizerFake.fit(trainFake)  ##fit in vector
     indexDictOfWordFake = vectorizerFake.vocabulary_  ##assign index for each word by vocab function
@@ -52,13 +63,9 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
     #print(bag_of_words_fake.shape)
     #print(type(bag_of_words_real))
     #print(BoWOfFake)
-    #print(uniqlistOfFakeWords) #feature names
+    print(len(uniqlistOfFakeWords)) #feature names
 
-    testHeadLines = {}
-    for line in testReal:
-        testHeadLines[line] = "real"
-    for line in testFake:
-        testHeadLines[line] = "fake"
+
 
     countOfRealsDict = {}
     countOfFakesDict = {}
@@ -70,7 +77,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
     for word in indexDictOfWordFake.keys():
         countOfFakesDict[word] = frequenciesOfFake[indexDictOfWordFake[word]]
 
-
+    testHeadLines = readCSV("test.csv")
 
     correctnessCount = 0
     for line in testHeadLines.keys():
@@ -78,7 +85,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
         vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram),
                                          max_df=1.0, min_df=1, max_features=None)
         temp = []
-        temp.append(line)
+        temp.append(testHeadLines[line]["Id"])
         #print(temp)
         vectorizerTest.fit(temp)  ##fit in vector
         testindexDictOfWord = vectorizerTest.vocabulary_  ##assign index for each word by vocab function
@@ -87,10 +94,10 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
         test_uniqlistOfWords = vectorizerTest.get_feature_names()  ## create unique list by feature function
 
 
-        #print(line)
+        #print(testHeadLines[line]["Id"])
         result = naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testindexDictOfWord, test_BoW)
         #print(result)
-        if result == testHeadLines[line]:
+        if result == testHeadLines[line]["Category"]:
             correctnessCount += 1
         #print("--------------------------------------")
 
@@ -143,7 +150,7 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
     #print("fake probability: ", fakeProbability)
 
 
-    if(realProbability > fakeProbability):
+    if(realProbability >= fakeProbability):
         return "real"
     else:
         return "fake"

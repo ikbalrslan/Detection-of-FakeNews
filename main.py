@@ -1,6 +1,7 @@
-from readFile import readFile, bagOfWords
+from readFile import readFile, bagOfWords, readCSV
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
+
 
 stopEnglish = "english"
 stopNone = None
@@ -18,3 +19,4 @@ bagOfWords(linesOfReal, linesOfFake, stopNone, 2)
 
 #v = CountVectorizer(ngram_range=(2, 2))
 #print(v.fit(["an apple a day keeps the doctor away"]).vocabulary_)
+
