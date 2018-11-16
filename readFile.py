@@ -2,30 +2,85 @@ from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 from math import log10
 import pandas as pd
+from nltk.stem import PorterStemmer
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
-def readCSV(testFile):
+
+def readCSV(testFile,stemed):
     testHeadlines = pd.read_csv(testFile, sep=',', error_bad_lines=False, encoding="latin-1", index_col=False,
                                   warn_bad_lines=False, low_memory=False)
 
     testHeadlines.columns = ['Id', 'Category']
     testHeadlines.set_index("Id", "Category")
     testHeadDict = testHeadlines.to_dict(orient="index")
-    print(testHeadDict)
+
+    for i in testHeadDict.keys():
+        testHeadDict[i]['Id'] = 's_s_s {0} e_e_e'.format(testHeadDict[i]['Id'])
+    #print(testHeadDict)
+
+    ps = PorterStemmer()
+    if stemed == True:
+        #print("test stemmed: ")
+        for line in testHeadDict.keys():
+            words = word_tokenize(testHeadDict[line]['Id'])
+            stemmedLine = []
+            for word in words:
+                word = ps.stem(word)
+                # print(word)
+                stemmedLine.append(word)
+            stemLine = ' '.join(stemmedLine)
+            #print(stemLine)
+            testHeadDict[line]['Id'] = stemLine
+        #print(testHeadDict)
+
     return testHeadDict # return test dataframe
 
-
-
-def readFile(trainReal, trainFake):
+def readFile(trainReal, trainFake, stemed):
 
     with open(trainReal) as fileReal:
         linesOfReal = fileReal.read().splitlines() ##split text file into lines and store in list
 
     with open(trainFake) as fileFake:
         linesOfFake = fileFake.read().splitlines() ##split text file into lines and store in list
-    return linesOfReal,linesOfFake
 
-def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
+    new_linesOfReal = ['s_s_s {0} e_e_e'.format(i) for i in linesOfReal] ## add start end words to lines
+    new_linesOfFake = ['s_s_s {0} e_e_e'.format(i) for i in linesOfFake] ## add start end words to lines
+    ##########################################################
+    ps = PorterStemmer()
+    #print("reals: ")
+    stemLinesOfReal = []
+    for line in new_linesOfReal:
+        words = word_tokenize(line)
+        stemmedLine = []
+        for word in words:
+            word = ps.stem(word)
+            #print(word)
+            stemmedLine.append(word)
+        stemLine = ' '.join(stemmedLine)
+        stemLinesOfReal.append(stemLine)
+    #print(stemLinesOfReal)
+
+    #print("Fakes: ")
+    stemLinesOfFake = []
+    for line in new_linesOfFake:
+        words = word_tokenize(line)
+        stemmedLine = []
+        for word in words:
+            word = ps.stem(word)
+            #print(word)
+            stemmedLine.append(word)
+        stemLine = ' '.join(stemmedLine)
+        stemLinesOfFake.append(stemLine)
+    #print(stemLinesOfFake)
+    ##########################################################
+    if stemed == True:
+        return stemLinesOfReal, stemLinesOfFake
+    else:
+        return new_linesOfReal,new_linesOfFake
+
+
+def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
     # create the transform / stop_words="english"
     vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
@@ -38,7 +93,8 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
     bag_of_words_real = vectorizerReal.transform(trainReal)
     BoWOfReal = bag_of_words_real.toarray()  ##bag of words array
     uniqlistOfRealWords = vectorizerReal.get_feature_names()  ## create unique list by feature function
-    print(len(uniqlistOfRealWords))
+    #print("uniq real: ",len(uniqlistOfRealWords))
+    print("uniq real: ",uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
     vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
@@ -63,7 +119,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
     #print(bag_of_words_fake.shape)
     #print(type(bag_of_words_real))
     #print(BoWOfFake)
-    print(len(uniqlistOfFakeWords)) #feature names
+    #print("uniq fake: ",len(uniqlistOfFakeWords)) #feature names
 
 
 
@@ -77,7 +133,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
     for word in indexDictOfWordFake.keys():
         countOfFakesDict[word] = frequenciesOfFake[indexDictOfWordFake[word]]
 
-    testHeadLines = readCSV("test.csv")
+    testHeadLines = readCSV("test.csv", stemed)
 
     correctnessCount = 0
     for line in testHeadLines.keys():
@@ -101,6 +157,8 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
             correctnessCount += 1
         #print("--------------------------------------")
 
+    uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))  ##for bayes calculations
+    print("uniq: ", len(uniqWordsofFiles))  # feature names
     print("correctness count: ", correctnessCount)
     accuracy = calculationofAccuracy(correctnessCount, len(testHeadLines.keys()))
     print("Accuracy = ", accuracy)
@@ -109,6 +167,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram): ## ngram_range=(1, 1)
 
 def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testindexDictOfWord, test_BoW):
     uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys()))) ##for bayes calculations
+    #print("uniq: ", len(uniqWordsofFiles))  # feature names
     wordCountofReal = np.sum(list(countOfRealsDict.values()))  ## sum counts of the worlds
     wordCountofFake = np.sum(list(countOfFakesDict.values()))  ## sum counts of the worlds
 
@@ -127,7 +186,7 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
         elif word in countOfFakesDict.keys():
             realCondProb[word] = (0 + smoothing) / (wordCountofReal + len(uniqWordsofFiles))
         else:
-            realCondProb[word] = 1 ##for words that does not include in the model data
+            realCondProb[word] = (0 + smoothing) / (wordCountofReal + len(uniqWordsofFiles)) ##for words that does not include in the model data
         ## take test index of word and find count of word in test_BoW then multiply with log of word count
         realProbability += (test_BoW[0][testindexDictOfWord[word]] * log10(realCondProb[word]))
 
@@ -143,7 +202,7 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
         elif word in countOfRealsDict.keys():
             fakeCondProb[word] = (0 + smoothing) / (wordCountofFake + len(uniqWordsofFiles))
         else:
-            fakeCondProb[word] = 1 ##for words that does not include in the model data
+            fakeCondProb[word] = (0 + smoothing) / (wordCountofFake + len(uniqWordsofFiles)) ##for words that does not include in the model data
         ## take test index of word and find count of word in test_BoW then multiply with log of word count
         fakeProbability += (test_BoW[0][testindexDictOfWord[word]] * log10(fakeCondProb[word]))
 
