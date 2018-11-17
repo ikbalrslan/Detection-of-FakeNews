@@ -33,7 +33,6 @@ def readCSV(testFile,stemed):
             #print(stemLine)
             testHeadDict[line]['Id'] = stemLine
         #print(testHeadDict)
-
     return testHeadDict # return test dataframe
 
 def readFile(trainReal, trainFake, stemed):
@@ -50,7 +49,8 @@ def readFile(trainReal, trainFake, stemed):
     ps = PorterStemmer()
     #print("reals: ")
     stemLinesOfReal = []
-    for line in new_linesOfReal:
+    copyLinesOfReal = new_linesOfReal.copy()
+    for line in copyLinesOfReal:
         words = word_tokenize(line)
         stemmedLine = []
         for word in words:
@@ -63,7 +63,8 @@ def readFile(trainReal, trainFake, stemed):
 
     #print("Fakes: ")
     stemLinesOfFake = []
-    for line in new_linesOfFake:
+    copyLinesOfFake = new_linesOfFake.copy()
+    for line in copyLinesOfFake:
         words = word_tokenize(line)
         stemmedLine = []
         for word in words:
@@ -77,12 +78,12 @@ def readFile(trainReal, trainFake, stemed):
     if stemed == True:
         return stemLinesOfReal, stemLinesOfFake
     else:
-        return new_linesOfReal,new_linesOfFake
+        return new_linesOfReal,copyLinesOfFake
 
 
-def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
+def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
     # create the transform / stop_words="english"
-    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainReal = linesOfReal[:]
@@ -94,10 +95,10 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_rang
     BoWOfReal = bag_of_words_real.toarray()  ##bag of words array
     uniqlistOfRealWords = vectorizerReal.get_feature_names()  ## create unique list by feature function
     #print("uniq real: ",len(uniqlistOfRealWords))
-    print("uniq real: ",uniqlistOfRealWords)
+    #print("uniq real: ",uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
-    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainFake = linesOfFake[:]
@@ -121,8 +122,6 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_rang
     #print(BoWOfFake)
     #print("uniq fake: ",len(uniqlistOfFakeWords)) #feature names
 
-
-
     countOfRealsDict = {}
     countOfFakesDict = {}
 
@@ -138,7 +137,7 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_rang
     correctnessCount = 0
     for line in testHeadLines.keys():
         #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopwords, analyzer='word', ngram_range=(ngram, ngram),
+        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram),
                                          max_df=1.0, min_df=1, max_features=None)
         temp = []
         temp.append(testHeadLines[line]["Id"])
@@ -162,7 +161,9 @@ def bagOfWords(linesOfReal,linesOfFake, stopwords, ngram, stemed): ## ngram_rang
     print("correctness count: ", correctnessCount)
     accuracy = calculationofAccuracy(correctnessCount, len(testHeadLines.keys()))
     print("Accuracy = ", accuracy)
-    understandData(countOfRealsDict,countOfFakesDict)
+
+    #print("Understand Data: ")
+    #understandData(countOfRealsDict,countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords)
 
 
 def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testindexDictOfWord, test_BoW):
@@ -208,7 +209,6 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
 
     #print("fake probability: ", fakeProbability)
 
-
     if(realProbability >= fakeProbability):
         return "real"
     else:
@@ -218,12 +218,32 @@ def calculationofAccuracy(correctnessCount, testSize):
     accuracy = 100 * (correctnessCount / testSize)
     return accuracy
 
-def understandData(countOfRealsDict,countOfFakesDict):
+def understandData(countOfRealsDict,countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords):
     #sort dicts
-    sortedRealDict = [(k, countOfRealsDict[k]) for k in sorted(countOfRealsDict, key=countOfRealsDict.get, reverse=True)]
-    sortedFakeDict = [(k, countOfFakesDict[k]) for k in sorted(countOfFakesDict, key=countOfFakesDict.get, reverse=True)]
-    counterReal = 0
-    counterFake = 0
+    sortedRealDict = [{k:countOfRealsDict[k]} for k in sorted(countOfRealsDict, key=countOfRealsDict.get, reverse=True)]
+    sortedFakeDict = [{k:countOfFakesDict[k]} for k in sorted(countOfFakesDict, key=countOfFakesDict.get, reverse=True)]
     #print(sortedRealDict)
-    #print(sortedFakeDict)
+    counterReal = 0
+    topThreeReal = []
+    counterFake = 0
+    topThreeFake = []
+
+    ##########################################################################################################
+    # Looks for uniq top 3 real words which does not inside the fakes. Same process with the fake words again#
+    ##########################################################################################################
+    for item in sortedRealDict:
+        id_word = (list(item.keys()))[0]
+        if ((id_word not in uniqlistOfFakeWords) and counterReal < 3):
+            #print(id_word)
+            topThreeReal.append(item)
+            counterReal += 1
+    print("TOP Reals: ", topThreeReal)
+
+    for item in sortedFakeDict:
+        id_word = (list(item.keys()))[0]
+        if ((id_word not in uniqlistOfRealWords) and counterFake < 3):
+            #print(id_word)
+            topThreeFake.append(item)
+            counterFake += 1
+    print("TOP Fakes: ", topThreeFake)
 
