@@ -7,7 +7,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 
-def readCSV(testFile,stemed):
+def readCSV(testFile, ngram, stemed):
     testHeadlines = pd.read_csv(testFile, sep=',', error_bad_lines=False, encoding="latin-1", index_col=False,
                                   warn_bad_lines=False, low_memory=False)
 
@@ -15,9 +15,10 @@ def readCSV(testFile,stemed):
     testHeadlines.set_index("Id", "Category")
     testHeadDict = testHeadlines.to_dict(orient="index")
 
-    for i in testHeadDict.keys():
-        testHeadDict[i]['Id'] = 's_s_s {0} e_e_e'.format(testHeadDict[i]['Id'])
-    #print(testHeadDict)
+    ## if ngram == 2 add tokens to the lines start and end
+    if ngram == 2:
+        for i in testHeadDict.keys():
+            testHeadDict[i]['Id'] = 's_s_s {0} e_e_e'.format(testHeadDict[i]['Id'])  # print(testHeadDict)
 
     ps = PorterStemmer()
     if stemed == True:
@@ -35,7 +36,7 @@ def readCSV(testFile,stemed):
         #print(testHeadDict)
     return testHeadDict # return test dataframe
 
-def readFile(trainReal, trainFake, stemed):
+def readFile(trainReal, trainFake, ngram, stemed):
 
     with open(trainReal) as fileReal:
         linesOfReal = fileReal.read().splitlines() ##split text file into lines and store in list
@@ -49,7 +50,13 @@ def readFile(trainReal, trainFake, stemed):
     ps = PorterStemmer()
     #print("reals: ")
     stemLinesOfReal = []
-    copyLinesOfReal = new_linesOfReal.copy()
+
+    ## if ngram == 1 do not add tokens to the lines start and end. But if ngram == 2 add those to the lines
+    if ngram == 1:
+        copyLinesOfReal = linesOfReal.copy()
+    elif ngram == 2:
+        copyLinesOfReal = new_linesOfReal.copy()
+
     for line in copyLinesOfReal:
         words = word_tokenize(line)
         stemmedLine = []
@@ -63,7 +70,12 @@ def readFile(trainReal, trainFake, stemed):
 
     #print("Fakes: ")
     stemLinesOfFake = []
-    copyLinesOfFake = new_linesOfFake.copy()
+
+    ## if ngram == 1 do not add tokens to the lines start and end. But if ngram == 2 add those to the lines
+    if ngram == 1:
+        copyLinesOfFake = linesOfFake.copy()
+    elif ngram == 2:
+        copyLinesOfFake = new_linesOfFake.copy()
     for line in copyLinesOfFake:
         words = word_tokenize(line)
         stemmedLine = []
@@ -83,7 +95,7 @@ def readFile(trainReal, trainFake, stemed):
 
 def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
     # create the transform / stop_words="english"
-    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram), max_df=1.0, min_df=1,
+    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainReal = linesOfReal[:]
@@ -98,7 +110,7 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     #print("uniq real: ",uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
-    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram), max_df=1.0, min_df=1,
+    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainFake = linesOfFake[:]
@@ -132,12 +144,12 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     for word in indexDictOfWordFake.keys():
         countOfFakesDict[word] = frequenciesOfFake[indexDictOfWordFake[word]]
 
-    testHeadLines = readCSV("test.csv", stemed)
+    testHeadLines = readCSV("test.csv", ngram, stemed)
 
     correctnessCount = 0
     for line in testHeadLines.keys():
         #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram),
+        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram),
                                          max_df=1.0, min_df=1, max_features=None)
         temp = []
         temp.append(testHeadLines[line]["Id"])
