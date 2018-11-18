@@ -83,7 +83,7 @@ def readFile(trainReal, trainFake, stemed):
 
 def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
     # create the transform / stop_words="english"
-    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainReal = linesOfReal[:]
@@ -98,7 +98,7 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     #print("uniq real: ",uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
-    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
+    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram), max_df=1.0, min_df=1,
                                      max_features=None)
 
     trainFake = linesOfFake[:]
@@ -137,7 +137,7 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     correctnessCount = 0
     for line in testHeadLines.keys():
         #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram),
+        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(1, ngram),
                                          max_df=1.0, min_df=1, max_features=None)
         temp = []
         temp.append(testHeadLines[line]["Id"])
