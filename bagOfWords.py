@@ -1,14 +1,14 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 from readFile import readCSV
-from naiveBayes import naiveBayes,calculationofAccuracy
+from naiveBayes import naiveBayes,calculationofAccuracy,understandData
 
 
-
-def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
+## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
+def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed):
     # create the transform / stop_words="english"
-    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
-                                     max_features=None)
+    vectorizerReal = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word',
+                                     ngram_range=(ngram, ngram), max_df=1.0, min_df=1,max_features=None)
 
     trainReal = linesOfReal[:]
 
@@ -22,8 +22,8 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     #print("uniq real: ",uniqlistOfRealWords)
 
     # create the transform / stop_words="english"
-    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram), max_df=1.0, min_df=1,
-                                     max_features=None)
+    vectorizerFake = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word',
+                                     ngram_range=(ngram, ngram), max_df=1.0, min_df=1,max_features=None)
 
     trainFake = linesOfFake[:]
 
@@ -61,8 +61,8 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
     correctnessCount = 0
     for line in testHeadLines.keys():
         #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word', ngram_range=(ngram, ngram),
-                                         max_df=1.0, min_df=1, max_features=None)
+        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word',
+                                         ngram_range=(ngram, ngram), max_df=1.0, min_df=1, max_features=None)
         temp = []
         temp.append(testHeadLines[line]["Id"])
         #print(temp)
@@ -80,11 +80,11 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed): ## ngram_ra
             correctnessCount += 1
         #print("--------------------------------------")
 
-    uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))  ##for bayes calculations
+    uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))##for bayes calculations
     print("uniq: ", len(uniqWordsofFiles))  # feature names
     print("correctness count: ", correctnessCount)
     accuracy = calculationofAccuracy(correctnessCount, len(testHeadLines.keys()))
     print("Accuracy = ", accuracy)
 
-    #print("Understand Data: ")
-    #understandData(countOfRealsDict,countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords)
+    print("Understand Data: ")
+    understandData(countOfRealsDict,countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords)

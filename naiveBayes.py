@@ -24,7 +24,8 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
         elif word in countOfFakesDict.keys():
             realCondProb[word] = (0 + smoothing) / (wordCountofReal + len(uniqWordsofFiles))
         else:
-            realCondProb[word] = (0 + smoothing) / (wordCountofReal + len(uniqWordsofFiles)) ##for words that does not include in the model data
+            ##for words that does not include in the model data
+            realCondProb[word] = (0 + smoothing) / (wordCountofReal + len(uniqWordsofFiles))
         ## take test index of word and find count of word in test_BoW then multiply with log of word count
         realProbability += (test_BoW[0][testindexDictOfWord[word]] * log10(realCondProb[word]))
 
@@ -40,7 +41,8 @@ def naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testind
         elif word in countOfRealsDict.keys():
             fakeCondProb[word] = (0 + smoothing) / (wordCountofFake + len(uniqWordsofFiles))
         else:
-            fakeCondProb[word] = (0 + smoothing) / (wordCountofFake + len(uniqWordsofFiles)) ##for words that does not include in the model data
+            ##for words that does not include in the model data
+            fakeCondProb[word] = (0 + smoothing) / (wordCountofFake + len(uniqWordsofFiles))
         ## take test index of word and find count of word in test_BoW then multiply with log of word count
         fakeProbability += (test_BoW[0][testindexDictOfWord[word]] * log10(fakeCondProb[word]))
 
