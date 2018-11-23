@@ -1,4 +1,4 @@
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import numpy as np
 from readFile import readCSV
 from naiveBayes import naiveBayes,calculationofAccuracy,understandData
@@ -75,7 +75,74 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed):
     print("Accuracy = ", accuracy)
     return [countOfRealsDict, countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords]
 
+def tenWordsWith_Tf_Idf(linesOfReal, linesOfFake):
+    tf_real = TfidfVectorizer(smooth_idf=False, sublinear_tf=False, norm=None, analyzer='word')
+    txt_fitted = tf_real.fit(linesOfReal)
+    txt_transformed = txt_fitted.transform(linesOfReal)
+    indexDictOfReals = tf_real.vocabulary_
+
+    real_idf = tf_real.idf_
+    idf_words = dict(zip(txt_fitted.get_feature_names(), real_idf))
+
+    # sort dict
+    sortedReal_idf = [{k: idf_words[k]} for k in sorted(idf_words, key=idf_words.get, reverse=True)]
+    #print(sortedReal_idf)
+
+    # get feature names
+    feature_names = np.array(tf_real.get_feature_names())
+    sorted_by_idf = np.argsort(tf_real.idf_)
+    #print("Real Features with lowest idf:\n{}".format(feature_names[sorted_by_idf[:10]]))
+    #print("\nReal Features with highest idf:\n{}".format(feature_names[sorted_by_idf[-10:]]))
+
+    newReal = tf_real.transform(linesOfReal)
+    # find maximum value for each of the features over all of dataset:
+    max_val = newReal.max(axis=0).toarray().ravel()
+    # sort weights from smallest to biggest and extract their indices
+    sort_by_tfidf = max_val.argsort()
+
+    print("\n10 words whose presence most strongly predicts that the news is real.:")
+    for i in range(len(feature_names[sort_by_tfidf[-10:]])):
+        print(i + 1, "- ", feature_names[sort_by_tfidf[-10:]][i])
+    print("\n10 words whose absence most strongly predicts that the news is real.:")
+    for i in range(len(feature_names[sort_by_tfidf[:10]])):
+        print(i + 1, "- ", feature_names[sort_by_tfidf[:10]][i])
+
+
+    tf_fake = TfidfVectorizer(smooth_idf=False, sublinear_tf=False, norm=None, analyzer='word')
+    txt_fitted = tf_fake.fit(linesOfFake)
+    txt_transformed = txt_fitted.transform(linesOfFake)
+    indexDictOfReals = tf_fake.vocabulary_
+
+    real_idf = tf_fake.idf_
+    idf_words = dict(zip(txt_fitted.get_feature_names(), real_idf))
+
+    # sort dict
+    sortedReal_idf = [{k: idf_words[k]} for k in sorted(idf_words, key=idf_words.get, reverse=True)]
+    #print(sortedReal_idf)
+
+    # get feature names
+    feature_names = np.array(tf_fake.get_feature_names())
+    sorted_by_idf = np.argsort(tf_fake.idf_)
+    #print("Fake Features with lowest idf:\n{}".format(feature_names[sorted_by_idf[:10]]))
+    #print("\nFake Features with highest idf:\n{}".format(feature_names[sorted_by_idf[-10:]]))
+
+    newFake = tf_fake.transform(linesOfReal)
+    # find maximum value for each of the features over all of dataset:
+    max_val = newFake.max(axis=0).toarray().ravel()
+    # sort weights from smallest to biggest and extract their indices
+    sort_by_tfidf = max_val.argsort()
+
+    print("\n10 words whose presence most strongly predicts that the news is fake.: ")
+    for i in range(len(feature_names[sort_by_tfidf[-10:]])):
+        print(i+1, "- ", feature_names[sort_by_tfidf[-10:]][i])
+    print("\n10 words whose absence most strongly predicts that the news is fake.: ")
+    for i in range(len(feature_names[sort_by_tfidf[:10]])):
+        print(i + 1, "- ", feature_names[sort_by_tfidf[:10]][i])
+
+
+
 def tenWordsWithCondProb(countOfRealsDict, countOfFakesDict):
+
     uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))  ##for bayes calculations
     # print("uniq: ", len(uniqWordsofFiles))  # feature names
     wordCountofReal = np.sum(list(countOfRealsDict.values()))  ## sum counts of the worlds
@@ -131,4 +198,5 @@ def tenWordsWithCondProb(countOfRealsDict, countOfFakesDict):
     #print(sortedFakeCondProb[:10])
     for i in range(len(sortedFakeCondProb[:10])):
         print(i+1,"- ",sortedFakeCondProb[i])
+
 
