@@ -3,6 +3,9 @@ import numpy as np
 from readFile import readCSV
 from naiveBayes import naiveBayes,calculationofAccuracy,understandData
 from math import log10
+import csv
+
+
 
 
 ## ngram_range=(1, 1) for unigram, ngram_range=(2, 2) for bigram
@@ -46,34 +49,45 @@ def bagOfWords(linesOfReal,linesOfFake, ngram, stopEnglish, stemed):
 
     testHeadLines = readCSV("test.csv", ngram, stemed)
 
-    correctnessCount = 0
-    for line in testHeadLines.keys():
-        #stop_words="english"
-        vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word',
-                                         ngram_range=(ngram, ngram), max_df=1.0, min_df=1, max_features=None)
-        temp = []
-        temp.append(testHeadLines[line]["Id"])
-        #print(temp)
-        vectorizerTest.fit(temp)  ##fit in vector
-        testindexDictOfWord = vectorizerTest.vocabulary_  ##assign index for each word by vocab function
-        test_bag_of_words = vectorizerTest.transform(temp)
-        test_BoW= test_bag_of_words.toarray()  ##bag of words array
-        test_uniqlistOfWords = vectorizerTest.get_feature_names()  ## create unique list by feature function
+    #write results to the csv file
+    with open('output.csv', mode='w') as csv_file:
+        fieldnames = ['Id', 'Category']
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+
+        correctnessCount = 0
+        for line in testHeadLines.keys():
+            #stop_words="english"
+            vectorizerTest = CountVectorizer(lowercase=True, stop_words=stopEnglish, analyzer='word',
+                                             ngram_range=(ngram, ngram), max_df=1.0, min_df=1, max_features=None)
+            temp = []
+            temp.append(testHeadLines[line]["Id"])
+            #print(temp)
+            vectorizerTest.fit(temp)  ##fit in vector
+            testindexDictOfWord = vectorizerTest.vocabulary_  ##assign index for each word by vocab function
+            test_bag_of_words = vectorizerTest.transform(temp)
+            test_BoW= test_bag_of_words.toarray()  ##bag of words array
+            test_uniqlistOfWords = vectorizerTest.get_feature_names()  ## create unique list by feature function
 
 
-        #print(testHeadLines[line]["Id"])
-        result = naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testindexDictOfWord, test_BoW)
-        #print(result)
-        if result == testHeadLines[line]["Category"]:
-            correctnessCount += 1
-        #print("--------------------------------------")
+            #print(testHeadLines[line]["Id"])
+            result = naiveBayes(countOfRealsDict, BoWOfReal, countOfFakesDict, BoWOfFake, testindexDictOfWord, test_BoW)
 
-    uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))##for bayes calculations
-    #print("uniq word Count: ", len(uniqWordsofFiles))  # feature names
-    print("correctness count: ", correctnessCount)
-    accuracy = calculationofAccuracy(correctnessCount, len(testHeadLines.keys()))
-    print("Accuracy = ", accuracy)
-    return [countOfRealsDict, countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords]
+            ## write results to csv
+            writer.writerow({'Id': testHeadLines[line]["Id"], 'Category': result})
+
+
+            #print(result)
+            if result == testHeadLines[line]["Category"]:
+                correctnessCount += 1
+            #print("--------------------------------------")
+
+        uniqWordsofFiles = list(set(list(countOfRealsDict.keys()) + list(countOfFakesDict.keys())))##for bayes calculations
+        #print("uniq word Count: ", len(uniqWordsofFiles))  # feature names
+        print("correctness count: ", correctnessCount)
+        accuracy = calculationofAccuracy(correctnessCount, len(testHeadLines.keys()))
+        print("Accuracy = ", accuracy)
+        return [countOfRealsDict, countOfFakesDict, uniqlistOfRealWords, uniqlistOfFakeWords]
 
 def tenWordsWith_Tf_Idf(linesOfReal, linesOfFake):
     tf_real = TfidfVectorizer(smooth_idf=False, sublinear_tf=False, norm=None, analyzer='word')
